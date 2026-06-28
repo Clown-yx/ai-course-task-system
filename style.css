@@ -725,6 +725,7 @@ textarea::placeholder {
     width: min(100%, 540px);
     border: var(--line-strong) solid var(--black);
     padding: 30px;
+    background: var(--white);
     animation: modal-enter 180ms linear both;
 }
 
