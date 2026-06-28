@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course AI System</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <main class="app-shell">
+        <section id="input-page" class="page active" aria-labelledby="input-title">
+            <header class="page-header input-header">
+                <div>
+                    <p class="page-index">01 / INPUT</p>
+                    <h1 id="input-title">Course AI System</h1>
+                    <p>手动填写课程信息，或粘贴完整通知交给 AI 拆解。</p>
+                </div>
+                <button id="view-board" class="line-button" type="button" hidden>查看任务看板 →</button>
+            </header>
+
+            <div class="input-layout">
+                <section class="panel" aria-labelledby="manual-title">
+                    <div class="section-heading">
+                        <h2 id="manual-title">课程信息</h2>
+                        <span>MANUAL</span>
+                    </div>
+
+                    <div class="field-grid">
+                        <label class="field field-wide">
+                            <span>课程名称</span>
+                            <input id="course-name" type="text" maxlength="50" placeholder="例如：线性代数">
+                        </label>
+
+                        <label class="field">
+                            <span>课程类型</span>
+                            <select id="course-type">
+                                <option value="professional">专业课</option>
+                                <option value="general">通识课</option>
+                                <option value="elective">选修课</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </label>
+
+                        <label class="field">
+                            <span>重要程度</span>
+                            <select id="importance">
+                                <option value="high">高</option>
+                                <option value="medium" selected>中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="task-editor">
+                        <div class="section-heading compact">
+                            <h3>作业</h3>
+                            <button id="add-homework" class="line-button small" type="button">＋ 新增作业</button>
+                        </div>
+                        <div id="homework-list" class="task-row-list"></div>
+                    </div>
+
+                    <div class="task-editor">
+                        <div class="section-heading compact">
+                            <h3>项目</h3>
+                            <button id="add-project" class="line-button small" type="button">＋ 新增项目</button>
+                        </div>
+                        <div id="project-list" class="task-row-list"></div>
+                    </div>
+
+                    <fieldset class="exam-editor">
+                        <legend>考试信息</legend>
+                        <label class="check-item primary-check">
+                            <input id="has-exam" type="checkbox">
+                            <span>本课程有考试</span>
+                        </label>
+                        <div id="exam-items" class="check-grid" aria-disabled="true">
+                            <label class="check-item"><input type="checkbox" data-exam-item="class_questions" disabled><span>课堂例题</span></label>
+                            <label class="check-item"><input type="checkbox" data-exam-item="ppt_examples" disabled><span>PPT 例题</span></label>
+                            <label class="check-item"><input type="checkbox" data-exam-item="homework" disabled><span>平时作业</span></label>
+                            <label class="check-item"><input type="checkbox" data-exam-item="past_exam" disabled><span>往年题</span></label>
+                            <label class="check-item"><input type="checkbox" data-exam-item="new_questions" disabled><span>新题型</span></label>
+                        </div>
+                    </fieldset>
+
+                    <div class="form-actions">
+                        <button id="preview-manual" class="line-button strong" type="button">生成预览卡片 →</button>
+                    </div>
+                </section>
+
+                <section class="panel ai-panel" aria-labelledby="ai-title">
+                    <div class="section-heading">
+                        <h2 id="ai-title">AI 整段识别</h2>
+                        <span>DEEPSEEK</span>
+                    </div>
+                    <label class="field">
+                        <span>完整课程通知</span>
+                        <textarea id="ai-input" placeholder="在这里粘贴课程群通知、作业要求或考试范围……"></textarea>
+                    </label>
+                    <button id="parse-ai" class="line-button strong full" type="button">AI 解析并填入表单</button>
+                    <div id="ai-status" class="status-box" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+        </section>
+
+        <section id="confirm-page" class="page" aria-labelledby="confirm-title">
+            <header class="page-header horizontal-header">
+                <div>
+                    <p class="page-index">02 / CONFIRM</p>
+                    <h1 id="confirm-title">确认解析结果</h1>
+                </div>
+                <p>检查卡片。需要调整时返回填写页，确认后再写入看板。</p>
+            </header>
+            <div id="confirm-summary"></div>
+            <div id="confirm-cards" class="confirm-card-grid"></div>
+            <div class="confirm-actions">
+                <button id="back-to-input" class="line-button" type="button">← 返回修改</button>
+                <button id="confirm-add" class="line-button strong" type="button">确认并加入看板 →</button>
+            </div>
+        </section>
+
+        <section id="board-page" class="page" aria-labelledby="board-title">
+            <header class="page-header horizontal-header">
+                <div>
+                    <p class="page-index">03 / BOARD</p>
+                    <h1 id="board-title">Task Board</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="open-trash" class="line-button" type="button">回收站（0）</button>
+                    <button id="add-course" class="line-button" type="button">＋ 添加课程</button>
+                </div>
+            </header>
+
+            <div class="board" aria-live="polite">
+                <section class="board-column" aria-labelledby="done-title">
+                    <div class="column-heading"><h2 id="done-title">Done</h2><span id="done-count">0</span></div>
+                    <div id="done-list" class="card-list" tabindex="0" aria-label="Done 卡片列表"></div>
+                </section>
+                <section class="board-column current-column" aria-labelledby="today-title">
+                    <div class="column-heading"><h2 id="today-title">Today</h2><span id="today-count">0</span></div>
+                    <div id="today-list" class="card-list" tabindex="0" aria-label="Today 卡片列表"></div>
+                </section>
+                <section class="board-column" aria-labelledby="upcoming-title">
+                    <div class="column-heading"><h2 id="upcoming-title">Upcoming</h2><span id="upcoming-count">0</span></div>
+                    <div id="upcoming-list" class="card-list" tabindex="0" aria-label="Upcoming 卡片列表"></div>
+                </section>
+            </div>
+        </section>
+
+        <section id="trash-page" class="page" aria-labelledby="trash-title">
+            <header class="page-header horizontal-header">
+                <div>
+                    <p class="page-index">04 / TRASH</p>
+                    <h1 id="trash-title">回收站</h1>
+                    <p>删除的个人任务保留在这里，可以恢复或永久删除。</p>
+                </div>
+                <div class="header-actions">
+                    <button id="clear-trash" class="line-button" type="button">清空回收站</button>
+                    <button id="back-to-board" class="line-button strong" type="button">返回 Board →</button>
+                </div>
+            </header>
+            <div class="trash-summary">
+                <span>已删除任务</span>
+                <strong id="trash-count">0</strong>
+            </div>
+            <div id="trash-list" class="trash-grid" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <div id="confirm-modal" class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message" hidden>
+        <div class="confirm-modal-panel">
+            <p class="page-index">CONFIRM</p>
+            <h2 id="modal-title">确认操作</h2>
+            <p id="modal-message"></p>
+            <div class="confirm-actions">
+                <button id="modal-cancel" class="line-button" type="button">取消</button>
+                <button id="modal-confirm" class="line-button strong" type="button">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./app.js"></script>
+</body>
+</html>
