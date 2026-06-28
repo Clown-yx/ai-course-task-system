@@ -14,11 +14,17 @@
 
 ## Product Screenshots
 
-> 待补充：信息输入页截图
+### 课程信息输入
 
-> 待补充：解析确认页截图
+![课程信息输入页 Figma 原型](./docs/figma/页面一.png)
 
-> 待补充：任务看板页截图
+### AI 解析结果
+
+![AI 解析结果页 Figma 原型](./docs/figma/页面二.png)
+
+### 任务看板
+
+![任务看板页 Figma 原型](./docs/figma/页面三.png)
 
 ## Architecture
 
@@ -59,11 +65,15 @@ flowchart LR
 
 ## Demo
 
-- 在线体验：待部署后补充
+- [观看功能演示视频](./docs/demo.mp4)
+- 在线体验：等待 Vercel 账号审核后补充
 
 ## Figma
 
-- 设计稿：待补充公开链接
+- [输入页原型](./docs/figma/页面一.png)
+- [解析结果页原型](./docs/figma/页面二.png)
+- [任务看板页原型](./docs/figma/页面三.png)
+- Figma 在线设计稿：待补充公开链接
 
 ## Security
 
