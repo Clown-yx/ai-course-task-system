@@ -1,7 +1,7 @@
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 const MAX_INPUT_LENGTH = 12000;
 
-module.exports = async function handler(request, response) {
+async function handler(request, response) {
     if (request.method !== "POST") {
         response.setHeader("Allow", "POST");
         return response.status(405).json({ error: "仅支持 POST 请求。" });
@@ -78,8 +78,19 @@ module.exports = async function handler(request, response) {
 };
 
 function createPrompt(input) {
+    const { currentDate, currentYear } = getShanghaiDateContext();
+
     return `You are a university course information extraction system.
 Return ONLY valid JSON without Markdown fences.
+
+Current date in Asia/Shanghai: ${currentDate}
+Current year in Asia/Shanghai: ${currentYear}
+
+Date rules:
+- Resolve relative date expressions using the current date above.
+- If a date contains a month and day but no year, use ${currentYear}.
+- If the input explicitly contains a year, preserve that year.
+- Use null when a deadline cannot be determined. Never invent a date.
 
 Schema:
 {
@@ -105,11 +116,34 @@ Schema:
   }
 }
 
-Use null for unknown DDL. Do not invent dates or tasks.
+Do not invent tasks.
 Input:
 ${input}`;
+}
+
+function getShanghaiDateContext(now = new Date()) {
+    if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+        throw new TypeError("now must be a valid Date");
+    }
+
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(now);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+
+    return {
+        currentDate: `${values.year}-${values.month}-${values.day}`,
+        currentYear: values.year
+    };
 }
 
 function stripJsonFence(value) {
     return value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 }
+
+module.exports = handler;
+module.exports.createPrompt = createPrompt;
+module.exports.getShanghaiDateContext = getShanghaiDateContext;

@@ -264,7 +264,6 @@ textarea::placeholder {
 .project-submission { grid-area: submission; }
 .project-row .task-ddl { grid-area: ddl; }
 .project-row .remove-row { grid-area: remove; }
-}
 
 @keyframes row-enter {
     from { transform: translateX(-14px); }

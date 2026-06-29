@@ -262,19 +262,19 @@ The browser calls the same-origin serverless endpoint and never receives the Dee
 
 ---
 
-## 15. Dynamic Date Processing (TODO)
+## 15. Dynamic Date Processing
 
-Date-sensitive AI extraction must not rely on the model understanding relative expressions such as “this year” or “今年”. The backend must provide an explicit clock reference on every request.
+Date-sensitive AI extraction must not rely on the model understanding relative expressions such as “this year” or “今年”. The backend provides an explicit clock reference on every request.
 
-- Compute the current date and year on the server using the `Asia/Shanghai` time zone.
-- Inject the full current date (`YYYY-MM-DD`) and current year into the DeepSeek prompt for every parse request.
-- When the source notification includes a month and day but omits the year, instruct the model to use the server-provided current year.
-- Never hardcode a specific year such as `2026`; the value must update automatically across year boundaries.
-- Keep explicitly supplied years unchanged, even when they differ from the current year.
-- Add tests for dates without a year, explicit past or future years, December-to-January rollover, and server environments running in UTC.
-- Where possible, validate or normalize the returned date in application code instead of depending only on prompt compliance.
+- The server computes the current date and year using the `Asia/Shanghai` time zone.
+- Every DeepSeek prompt includes the full current date (`YYYY-MM-DD`) and current year.
+- A month and day without a year uses the server-provided current year.
+- An explicitly supplied year remains unchanged.
+- No specific calendar year is hardcoded.
+- Automated tests cover the UTC-to-Shanghai December/January boundary and verify the prompt rules.
+- Additional response-level date validation may be added when the backend schema validation layer is introduced.
 
-This requirement is planned but not yet implemented.
+The prompt clock and rollover tests are implemented in `api/parse.js` and `tests/api-parse.test.js`. Response-level schema validation remains part of the backend expansion.
 
 ---
 
