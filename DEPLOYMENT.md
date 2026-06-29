@@ -11,6 +11,18 @@
 
 GitHub 用于公开源码，Vercel 用于运行网页和 Serverless API。GitHub Pages 只能托管静态文件，因此可以运行手动录入和任务看板，但不能安全地直接调用 DeepSeek。
 
+## 本地 Node.js 服务
+
+仓库中的 `server/index.js` 可同时提供静态网页和 `/api/parse`，用于后续本地数据库及手机内测。
+
+```powershell
+Copy-Item .env.example .env.local
+# 编辑 .env.local，填写仅用于本机的 DEEPSEEK_API_KEY
+npm run start:env
+```
+
+默认地址为 `http://127.0.0.1:8000`，只允许开发电脑访问。需要进行热点手机测试时，将 `.env.local` 中的 `HOST` 改为 `0.0.0.0`，然后使用开发电脑的热点 IPv4 地址访问。该设置只适用于受控的专用网络，不得直接暴露到公网。
+
 ## 上线前必须完成
 
 1. 登录 DeepSeek 控制台，立即删除曾写入 `app.js` 的旧 Key。
@@ -54,8 +66,8 @@ GitHub 用于公开源码，Vercel 用于运行网页和 Serverless API。GitHub
 ```powershell
 node --check app.js
 node --check api/parse.js
-node --test tests/api-parse.test.js
-python -m http.server 8000
+npm test
+npm run start:env
 ```
 
-访问 `http://localhost:8000` 可检查静态页面。普通 Python 静态服务器不运行 `/api/parse`；完整 AI 联调应使用 Vercel 部署环境。
+访问 `http://127.0.0.1:8000` 可检查静态页面和同源 API。没有配置 Key 时，手动录入仍可使用，AI 接口会返回 `503`。

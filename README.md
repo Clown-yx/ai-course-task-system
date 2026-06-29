@@ -57,7 +57,29 @@ flowchart LR
 
 ## 本地运行
 
-直接打开 `index.html` 可使用手动录入、看板和本地存储功能。AI 解析必须通过带有 Serverless API 的部署环境使用。
+仅使用手动录入和本地任务看板时，可以直接打开 `index.html`。
+
+需要在本地使用 AI 解析时：
+
+1. 将 `.env.example` 复制为不会进入 Git 的 `.env.local`。
+2. 在 `.env.local` 中填写新的 `DEEPSEEK_API_KEY`。
+3. 执行：
+
+```powershell
+npm run start:env
+```
+
+4. 访问 `http://127.0.0.1:8000`。
+
+本地服务使用 Node.js 20.6 或更高版本，不需要安装第三方依赖。不要把真实 Key 写入 `.env.example`。
+
+若后续需要让同一热点中的手机访问，必须显式将 `.env.local` 中的 `HOST` 改为 `0.0.0.0`，并使用开发电脑的热点 IPv4 地址访问。只允许 Windows 防火墙的专用网络访问，不要开放到公网。
+
+运行全部自动测试：
+
+```powershell
+npm test
+```
 
 ## 部署说明
 

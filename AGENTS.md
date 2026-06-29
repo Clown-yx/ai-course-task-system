@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a browser-based course information organizer. `index.html` defines the page structure, `app.js` handles browser state and rendering, and `style.css` contains visual styles. `api/parse.js` is the server-side DeepSeek proxy. Automated API tests live under `tests/`, while screenshots and demo media live under `docs/`. `project_spec.md` records product requirements, `ROADMAP.md` tracks the 0–8 delivery stages, and `fix-log.md` documents actual changes.
+This repository is a browser-based course information organizer. `index.html` defines the page structure, `app.js` handles browser state and rendering, and `style.css` contains visual styles. `api/parse.js` is the shared DeepSeek proxy used by Vercel and the local Node.js server in `server/index.js`. Automated tests live under `tests/`, while screenshots and demo media live under `docs/`. `project_spec.md` records product requirements, `ROADMAP.md` tracks the 0–8 delivery stages, and `fix-log.md` documents actual changes.
 
 ## Build, Test, and Development Commands
 
@@ -11,10 +11,10 @@ No build step or package manager is currently required. Run the syntax and API t
 ```powershell
 node --check app.js
 node --check api/parse.js
-node --test tests/api-parse.test.js
+npm test
 ```
 
-Opening `index.html` directly supports manual entry and the local task board, but AI parsing requires the same-origin `/api/parse` backend. Use the browser console (F12) to inspect JavaScript and network errors during manual testing.
+Run the complete local service with `npm run start:env` after creating an ignored `.env.local`. The default address is `http://127.0.0.1:8000`. Opening `index.html` directly supports manual entry and the local task board, but AI parsing requires the same-origin `/api/parse` backend. Use the browser console (F12) to inspect JavaScript and network errors during manual testing.
 
 ## Coding Style & Naming Conventions
 

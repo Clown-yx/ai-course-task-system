@@ -204,12 +204,14 @@ Authorization must be enforced by the backend. Hiding controls in the frontend i
 
 ## 11. Backend and Local Pilot Architecture
 
-The next backend phase uses:
+The local HTTP baseline is implemented in `server/index.js`. The local pilot architecture uses:
 
 - Node.js HTTP API and static frontend server.
 - SQLite for the small local pilot.
 - Environment variables for secrets and machine-specific configuration.
 - A personal hotspot or private router for the development computer and a few test phones.
+
+The current local server provides the static frontend and `/api/parse` without third-party runtime dependencies. It binds to `127.0.0.1` by default. Binding to `0.0.0.0` must be an explicit local configuration used only on a controlled private network. SQLite, authentication, and task APIs are added in later roadmap stages.
 
 Initial request path:
 

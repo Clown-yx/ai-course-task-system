@@ -1,0 +1,14 @@
+{
+    "name": "ai-course-task-system",
+    "version": "0.1.0",
+    "private": true,
+    "description": "AI course information parser and task board",
+    "scripts": {
+        "start": "node server/index.js",
+        "start:env": "node --env-file=.env.local server/index.js",
+        "test": "node --test tests/api-parse.test.js tests/server.test.js"
+    },
+    "engines": {
+        "node": ">=20.6"
+    }
+}

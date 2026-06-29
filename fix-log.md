@@ -600,3 +600,46 @@
 - `vercel.json` JSON 解析通过。
 - 当前工作区密钥特征扫描未发现真实 DeepSeek Key。
 - 业务代码和 Prompt 未发现写死 `2026` 的默认年份规则；测试中保留反向断言，防止该问题回归。
+
+---
+
+## 2026年6月29日：阶段 1 本地 Node.js 后端
+
+### 修改文件
+
+- `server/index.js`
+- `tests/server.test.js`
+- `package.json`
+- `.env.example`
+- `README.md`
+- `DEPLOYMENT.md`
+- `AGENTS.md`
+- `project_spec.md`
+- `ROADMAP.md`
+- `学习此项目.md`（仅本地学习文档，不进入 Git）
+
+### 修改内容
+
+- 新增零第三方依赖的本地 Node.js HTTP 服务，同时提供 `index.html`、`app.js`、`style.css` 和 `/api/parse`。
+- 静态文件使用明确白名单，拒绝访问 `.env` 等未公开文件。
+- 本地服务复用 Vercel 的 `api/parse.js`，确保本地与线上 AI 代理逻辑一致。
+- 默认监听 `127.0.0.1:8000`；只有显式设置 `HOST=0.0.0.0` 时才允许热点手机连接。
+- 增加 1 MiB 请求体上限、端口校验、CSP、Referrer Policy 和 `nosniff` 响应头。
+- 新增 `package.json`，提供 `npm run start:env` 和 `npm test` 命令，不引入第三方运行依赖。
+- 新增静态页面、安全响应头、HEAD、文件白名单、API 路由和端口配置测试。
+- 更新本地运行、热点访问、安全边界和后续 SQLite 扩展说明。
+- 将 `ROADMAP.md` 的阶段 1 标记为完成。
+
+### 修改原因
+
+- 后续 SQLite、登录和任务 API 需要一个可在开发电脑持续运行的本地服务端入口。
+- Python 静态服务器不能提供 `/api/parse`，也不能承载后续认证和数据库功能。
+- 热点手机测试需要可控的监听地址，不能默认把开发服务暴露到所有网卡。
+
+### 验证结果
+
+- `node --check server/index.js` 通过。
+- `package.json` JSON 解析通过。
+- `npm test` 共 13 项测试全部通过，其中服务端测试 5 项。
+- 使用随机本地端口启动正式服务后，请求 `/` 返回 `HTTP 200` 和 `text/html; charset=utf-8`。
+- 未配置真实 DeepSeek Key；API 路由测试确认此时安全返回 `503`。
