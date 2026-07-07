@@ -220,7 +220,7 @@ The local HTTP baseline is implemented in `server/index.js`. The local pilot arc
 - Environment variables for secrets and machine-specific configuration.
 - A personal hotspot or private router for the development computer and a few test phones.
 
-The current local server provides the static frontend, `/api/parse`, SQLite initialization, and `/api/auth/*`. It binds to `127.0.0.1` by default. Binding to `0.0.0.0` must be an explicit local configuration used only on a controlled private network. Task APIs are added in later roadmap stages.
+The current local server provides the static frontend, `/api/parse`, SQLite initialization, `/api/auth/*`, and the stage-5A personal task API. It binds to `127.0.0.1` by default. Binding to `0.0.0.0` must be an explicit local configuration used only on a controlled private network. Class task APIs are added in later roadmap stages.
 
 Initial request path:
 
@@ -250,6 +250,17 @@ The initial SQLite schema is defined in `server/db/schema.sql` and is treated as
 - `audit_events` for security- and data-sensitive operations.
 
 Local database files, rosters, session dumps, and private pilot data must remain ignored by Git.
+
+Stage 5A personal task API:
+
+- `GET /api/tasks/personal`: list the logged-in user's personal tasks, including soft-deleted tasks for the recycle bin.
+- `POST /api/tasks/personal`: create one or more personal tasks for the logged-in user.
+- `PATCH /api/tasks/personal/:id`: update the logged-in user's task status.
+- `POST /api/tasks/personal/:id/trash`: soft-delete a personal task.
+- `POST /api/tasks/personal/:id/restore`: restore a soft-deleted personal task.
+- `DELETE /api/tasks/personal/:id`: permanently delete a personal task only after it is in the recycle bin.
+
+Every personal task query is scoped by `owner_user_id`; one user must not read, update, delete, or restore another user's personal tasks. Users who have not completed the first-login password change cannot use task APIs.
 
 ---
 

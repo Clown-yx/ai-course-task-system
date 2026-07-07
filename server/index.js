@@ -6,6 +6,7 @@ const parseHandler = require("../api/parse.js");
 const { openDatabase } = require("./db/index.js");
 const { createAuthRouter } = require("./auth/routes.js");
 const { bootstrapPilotUsers } = require("./auth/bootstrap.js");
+const { createPersonalTaskRouter } = require("./tasks/personal.js");
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8000;
@@ -27,6 +28,7 @@ function createServer(options = {}) {
         sessionTtlMs: options.sessionTtlMs,
         secureCookies: options.secureCookies
     });
+    const personalTaskRouter = createPersonalTaskRouter(db);
 
     const server = http.createServer(async (request, response) => {
         setSecurityHeaders(response);
@@ -45,7 +47,12 @@ function createServer(options = {}) {
         }
 
         if (requestUrl.pathname.startsWith("/api/auth/")) {
-            await handleAuthApiRequest(request, response, requestUrl.pathname, authRouter);
+            await handleJsonApiRequest(request, response, requestUrl.pathname, authRouter);
+            return;
+        }
+
+        if (requestUrl.pathname.startsWith("/api/tasks/personal")) {
+            await handleJsonApiRequest(request, response, requestUrl.pathname, personalTaskRouter);
             return;
         }
 
@@ -100,7 +107,7 @@ async function handleApiRequest(request, response) {
     );
 }
 
-async function handleAuthApiRequest(request, response, pathname, authRouter) {
+async function handleJsonApiRequest(request, response, pathname, router) {
     let body = {};
     if (request.method !== "GET" && request.method !== "HEAD") {
         let rawBody;
@@ -121,7 +128,12 @@ async function handleAuthApiRequest(request, response, pathname, authRouter) {
         }
     }
 
-    await authRouter(request, createApiResponse(response), { pathname, body });
+    try {
+        await router(request, createApiResponse(response), { pathname, body });
+    } catch (error) {
+        console.error("JSON API 处理失败：", error);
+        sendJson(response, 400, { error: error.message || "请求处理失败。" });
+    }
 }
 
 function readRequestBody(request) {

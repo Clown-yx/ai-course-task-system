@@ -733,3 +733,43 @@
 
 - `node --check app.js`、`node --check server/index.js`、`node --check server/auth/bootstrap.js`、`node --check server/auth/routes.js`、`node --check server/auth/session.js` 和 `node --check server/auth/password.js` 通过。
 - `npm test` 共 24 项测试全部通过。
+
+---
+
+## 2026年7月8日：阶段 5A 个人任务服务端化
+
+### 修改文件
+
+- `server/tasks/personal.js`
+- `server/index.js`
+- `app.js`
+- `tests/personal-tasks.test.js`
+- `package.json`
+- `README.md`
+- `project_spec.md`
+- `ROADMAP.md`
+- `fix-log.md`
+
+### 修改内容
+
+- 新增个人任务 API，支持登录用户读取、新增、完成/恢复状态更新、移入回收站、从回收站恢复和永久删除。
+- 所有个人任务接口都通过 session 获取当前用户，并按 `owner_user_id` 过滤数据，防止用户读取或修改他人任务。
+- 未登录访问个人任务 API 返回 `401`；首次登录未改密的用户访问任务 API 返回 `403`。
+- 前端任务主存储从 `localStorage` 改为同源 `/api/tasks/personal`。
+- 登录进入应用后从后端读取个人任务；确认添加任务时写入 SQLite；完成、恢复、删除、回收站操作同步后端。
+- `localStorage` 仍保留为服务端读取失败时的本地缓存兜底，完整迁移流程留到阶段 6。
+- 新增个人任务 API 自动测试，覆盖未登录、强制改密、用户隔离、创建、状态更新、软删除、恢复和永久删除。
+- README 和项目规范更新为“个人任务已服务端化，班级任务仍待做”。
+
+### 修改原因
+
+- 5 人以内内测必须保证不同账号任务隔离、刷新后任务持久化，不能继续依赖单浏览器 `localStorage` 作为主存储。
+- 班级任务和角色权限仍未完成，先交付个人任务服务端化可以更快进入受控内测，同时不破坏后续班级任务结构。
+
+### 验证结果
+
+- `node --check app.js`、`node --check server/index.js` 和 `node --check server/tasks/personal.js` 通过。
+- `npm test` 共 26 项测试全部通过，其中个人任务 API 测试 2 项覆盖核心流程。
+- `git diff --check` 通过；仅出现 Windows 换行符提示，不影响代码内容。
+- 密钥特征扫描未发现 DeepSeek Key 或初始密码明文。
+- Git 跟踪文件检查确认没有 `.db`、`.sqlite`、`data/`、`rosters/` 或 `sessions/` 私有数据文件进入仓库。

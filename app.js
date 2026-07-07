@@ -1,6 +1,7 @@
 const STORAGE_KEY = "course-ai-tasks-v1";
 const API_URL = "./api/parse";
 const AUTH_API_URL = "./api/auth";
+const PERSONAL_TASKS_API_URL = "./api/tasks/personal";
 const BOARD_LIST_IDS = ["done-list", "today-list", "upcoming-list"];
 
 const COURSE_TYPE_LABELS = {
@@ -24,7 +25,7 @@ const EXAM_ITEM_LABELS = {
     new_questions: "新题型"
 };
 
-let tasks = loadTasks();
+let tasks = [];
 let pendingDraft = null;
 let pendingConfirmation = null;
 let lastFocusedElement = null;
@@ -35,7 +36,6 @@ let currentUser = null;
 document.addEventListener("DOMContentLoaded", async () => {
     bindStaticEvents();
     addTaskRow("homework");
-    renderBoard();
     await initializeAuth();
 });
 
@@ -197,15 +197,18 @@ async function logout() {
     }
 
     currentUser = null;
+    tasks = [];
+    renderBoard();
     updateUserBar();
     clearPasswordFields();
     showAuthMode("login");
     showAuthStatus("已退出登录。", "");
 }
 
-function unlockApplication() {
+async function unlockApplication() {
     updateUserBar();
     showAuthStatus("", "");
+    await loadPersonalTasks();
     showPage("input-page");
 }
 
@@ -364,25 +367,32 @@ function renderConfirmation(draft) {
         .join("");
 }
 
-function confirmDraft() {
+async function confirmDraft() {
     if (!pendingDraft) return;
 
-    const createdTasks = pendingDraft.tasks.map(task => ({
+    const taskPayload = pendingDraft.tasks.map(task => ({
         ...task,
-        id: createId(),
         course_name: pendingDraft.course_name,
         course_type: pendingDraft.course_type,
         importance: pendingDraft.importance,
         status: "pending",
-        exam: pendingDraft.exam
+        source: "manual"
     }));
 
-    tasks.push(...createdTasks);
-    saveTasks();
-    pendingDraft = null;
-    renderBoard();
-    resetForm();
-    showPage("board-page");
+    try {
+        const payload = await apiJson(PERSONAL_TASKS_API_URL, {
+            method: "POST",
+            body: JSON.stringify({ tasks: taskPayload })
+        });
+        tasks.push(...payload.tasks.map(normalizeStoredTask).filter(Boolean));
+        saveLocalTaskCache();
+        pendingDraft = null;
+        renderBoard();
+        resetForm();
+        showPage("board-page");
+    } catch (error) {
+        showStatus(`任务保存失败：${error.message}`, "error");
+    }
 }
 
 function renderBoard() {
@@ -612,15 +622,22 @@ async function confirmCardDeleteAnimation() {
     state.morph.style.height = "3px";
     await waitForMotion(300);
 
-    trashButton.classList.add("trash-receive");
-    state.task.deleted_at = new Date().toISOString();
-    saveTasks();
-    state.overlay.remove();
-    deleteAnimationState = null;
-    renderBoardPreservingLayout(boardLayout);
-    animateBoardReflow(boardLayout);
-    window.setTimeout(endStableBoardRender, getMotionDuration(300));
-    window.setTimeout(() => trashButton.classList.remove("trash-receive"), getMotionDuration(180));
+    try {
+        const updatedTask = await trashPersonalTask(state.task.id);
+        trashButton.classList.add("trash-receive");
+        Object.assign(state.task, updatedTask);
+        saveLocalTaskCache();
+        state.overlay.remove();
+        deleteAnimationState = null;
+        renderBoardPreservingLayout(boardLayout);
+        animateBoardReflow(boardLayout);
+        window.setTimeout(endStableBoardRender, getMotionDuration(300));
+        window.setTimeout(() => trashButton.classList.remove("trash-receive"), getMotionDuration(180));
+    } catch (error) {
+        console.error("任务删除失败：", error);
+        showStatus(`任务删除失败：${error.message}`, "error");
+        cleanupCardDeleteAnimation(true);
+    }
 }
 
 function cleanupCardDeleteAnimation(restoreCard) {
@@ -767,7 +784,9 @@ async function startTaskTransfer(task, action, card) {
 
     task.status = action === "complete" ? "done" : "pending";
     taskTransferState.statusChanged = true;
-    saveTasks();
+    const updatedTask = await updatePersonalTaskStatus(task.id, task.status);
+    Object.assign(task, updatedTask);
+    saveLocalTaskCache();
     renderBoardPreservingLayout(boardLayout);
 
     const destinationCard = findBoardCard(task.id);
@@ -834,7 +853,7 @@ function cleanupTaskTransfer(revertStatus) {
     if (!state) return;
     if (revertStatus && state.statusChanged) {
         state.task.status = state.originalStatus;
-        saveTasks();
+        saveLocalTaskCache();
         renderBoardPreservingLayout(state.boardLayout);
         animateBoardReflow(state.boardLayout);
     } else {
@@ -862,10 +881,17 @@ function restoreTask(taskId, card) {
     const task = tasks.find(item => item.id === taskId && item.deleted_at);
     if (!task) return;
     card?.classList.add("moving-left");
-    window.setTimeout(() => {
-        delete task.deleted_at;
-        saveTasks();
-        renderBoard();
+    window.setTimeout(async () => {
+        try {
+            const restoredTask = await restorePersonalTask(taskId);
+            Object.assign(task, restoredTask);
+            saveLocalTaskCache();
+            renderBoard();
+        } catch (error) {
+            console.error("任务恢复失败：", error);
+            showStatus(`任务恢复失败：${error.message}`, "error");
+            card?.classList.remove("moving-left");
+        }
     }, card ? 220 : 0);
 }
 
@@ -876,10 +902,15 @@ function requestPermanentDelete(taskId) {
         title: "永久删除",
         message: `永久删除“${getTaskTitle(task)}”后无法恢复。`,
         confirmLabel: "永久删除",
-        onConfirm: () => {
-            tasks = tasks.filter(item => item.id !== taskId);
-            saveTasks();
-            renderBoard();
+        onConfirm: async () => {
+            try {
+                await deletePersonalTask(taskId);
+                tasks = tasks.filter(item => item.id !== taskId);
+                saveLocalTaskCache();
+                renderBoard();
+            } catch (error) {
+                showStatus(`永久删除失败：${error.message}`, "error");
+            }
         }
     });
 }
@@ -891,10 +922,16 @@ function requestClearTrash() {
         title: "清空回收站",
         message: `将永久删除回收站中的 ${deletedCount} 个任务，此操作无法恢复。`,
         confirmLabel: "确认清空",
-        onConfirm: () => {
-            tasks = tasks.filter(task => !task.deleted_at);
-            saveTasks();
-            renderBoard();
+        onConfirm: async () => {
+            try {
+                const deletedTasks = tasks.filter(task => task.deleted_at);
+                await Promise.all(deletedTasks.map(task => deletePersonalTask(task.id)));
+                tasks = tasks.filter(task => !task.deleted_at);
+                saveLocalTaskCache();
+                renderBoard();
+            } catch (error) {
+                showStatus(`清空回收站失败：${error.message}`, "error");
+            }
         }
     });
 }
@@ -1073,7 +1110,23 @@ function showStatus(message, type) {
     status.textContent = message;
 }
 
-function loadTasks() {
+async function loadPersonalTasks() {
+    try {
+        const payload = await apiJson(PERSONAL_TASKS_API_URL);
+        tasks = Array.isArray(payload.tasks)
+            ? payload.tasks.map(normalizeStoredTask).filter(Boolean)
+            : [];
+        saveLocalTaskCache();
+        renderBoard();
+    } catch (error) {
+        console.error("服务端任务读取失败：", error);
+        tasks = loadLocalTaskCache();
+        renderBoard();
+        showStatus(`服务端任务读取失败，暂显示本地缓存：${error.message}`, "error");
+    }
+}
+
+function loadLocalTaskCache() {
     try {
         const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
         return Array.isArray(stored)
@@ -1101,7 +1154,7 @@ function normalizeStoredTask(task) {
     };
 }
 
-function saveTasks() {
+function saveLocalTaskCache() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
     } catch (error) {
@@ -1109,10 +1162,50 @@ function saveTasks() {
     }
 }
 
-function createId() {
-    return typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+async function updatePersonalTaskStatus(taskId, status) {
+    const payload = await apiJson(`${PERSONAL_TASKS_API_URL}/${encodeURIComponent(taskId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+    });
+    return normalizeStoredTask(payload.task);
+}
+
+async function trashPersonalTask(taskId) {
+    const payload = await apiJson(`${PERSONAL_TASKS_API_URL}/${encodeURIComponent(taskId)}/trash`, {
+        method: "POST",
+        body: "{}"
+    });
+    return normalizeStoredTask(payload.task);
+}
+
+async function restorePersonalTask(taskId) {
+    const payload = await apiJson(`${PERSONAL_TASKS_API_URL}/${encodeURIComponent(taskId)}/restore`, {
+        method: "POST",
+        body: "{}"
+    });
+    return normalizeStoredTask(payload.task);
+}
+
+async function deletePersonalTask(taskId) {
+    await apiJson(`${PERSONAL_TASKS_API_URL}/${encodeURIComponent(taskId)}`, {
+        method: "DELETE"
+    });
+}
+
+async function apiJson(url, options = {}) {
+    const response = await fetch(url, {
+        credentials: "same-origin",
+        headers: {
+            ...(options.body ? { "Content-Type": "application/json" } : {}),
+            ...(options.headers || {})
+        },
+        ...options
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error || `请求失败（HTTP ${response.status}）`);
+    }
+    return payload;
 }
 
 function getLocalDateString() {

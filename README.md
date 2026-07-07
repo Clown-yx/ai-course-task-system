@@ -10,7 +10,7 @@
 
 ## 解决方案
 
-用户登录后输入完整课程通知，系统通过 DeepSeek 将文本解析为结构化 JSON。用户确认结果后，每项作业或项目会进入 `Done / Today / Upcoming` 任务看板。当前任务数据仍保存在浏览器本地，后续阶段会迁移到 SQLite。
+用户登录后输入完整课程通知，系统通过 DeepSeek 将文本解析为结构化 JSON。用户确认结果后，每项作业或项目会进入 `Done / Today / Upcoming` 任务看板，并保存到本地 SQLite 后端。
 
 ## 产品原型
 
@@ -46,6 +46,7 @@ flowchart LR
 - `Done / Today / Upcoming` 自动分类
 - 本地持久化、软删除与回收站
 - 学号登录、首次登录强制改密、服务端 session
+- 个人任务服务端保存、刷新持久化和账号隔离
 - 桌面、平板和移动端响应式布局
 - 服务端环境变量管理 API Key
 
@@ -102,7 +103,9 @@ roster JSON 示例：
 npm test
 ```
 
-当前阶段已新增 SQLite 结构基线和登录认证。schema 位于 `server/db/schema.sql`。实际 `.db` / `.sqlite` 数据库文件、学生名单、会话文件和本地试点数据均被 Git 忽略，不能提交到公开仓库。
+当前阶段已新增 SQLite 结构基线、登录认证和个人任务 API。schema 位于 `server/db/schema.sql`。实际 `.db` / `.sqlite` 数据库文件、学生名单、会话文件和本地试点数据均被 Git 忽略，不能提交到公开仓库。
+
+说明：当前服务端化的是“个人任务”。班级管理员发布共享任务、角色权限 UI 和完整 `localStorage` 批量迁移仍属于后续阶段。
 
 ## 部署说明
 
