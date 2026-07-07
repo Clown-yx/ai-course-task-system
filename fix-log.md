@@ -773,3 +773,40 @@
 - `git diff --check` 通过；仅出现 Windows 换行符提示，不影响代码内容。
 - 密钥特征扫描未发现 DeepSeek Key 或初始密码明文。
 - Git 跟踪文件检查确认没有 `.db`、`.sqlite`、`data/`、`rosters/` 或 `sessions/` 私有数据文件进入仓库。
+
+---
+
+## 2026年7月8日：阶段 7A 本地手机内测准备
+
+### 修改文件
+
+- `PILOT.md`
+- `server/pilot/check-config.js`
+- `package.json`
+- `README.md`
+- `project_spec.md`
+- `fix-log.md`
+
+### 修改内容
+
+- 新增 5 人以内本地手机内测指南，明确 `.env.local`、内测账号、roster、热点访问、防火墙和验收清单。
+- 新增 `npm run pilot:check` 配置自检命令。
+- 自检脚本检查 Node 版本、`INITIAL_PASSWORD`、账号来源、数据库路径、`HOST=0.0.0.0` 局域网风险和 roster JSON 格式。
+- roster 检查限制当前阶段最多 5 人，并要求每项包含 `studentId/displayName` 或 `student_id/display_name`。
+- 自检脚本只输出错误和警告，不输出真实初始密码、DeepSeek Key、Cookie 或完整名单内容。
+- README 增加 `PILOT.md` 入口；项目规范增加本地内测自检要求。
+
+### 修改原因
+
+- 代码已经具备登录和个人任务服务端持久化，下一步需要让本地手机内测流程可重复、可检查、可避免误提交敏感数据。
+- 直接让手机访问开发电脑需要显式暴露到局域网，必须在文档和自检中提示风险。
+
+### 验证结果
+
+- `node --check server/pilot/check-config.js` 通过。
+- `npm test` 共 27 项测试全部通过，其中新增 pilot 自检测试 1 项。
+- `npm run pilot:check` 在未配置 `.env.local` 时能输出缺少 `INITIAL_PASSWORD` 和账号来源的明确错误。
+- 使用临时占位环境变量运行 `node server/pilot/check-config.js` 可通过自检，并只提示未配置 DeepSeek Key。
+- `git diff --check` 通过；仅出现 Windows 换行符提示，不影响代码内容。
+- 密钥特征扫描未发现 DeepSeek Key 或初始密码明文。
+- Git 跟踪文件检查确认没有 `.db`、`.sqlite`、`data/`、`rosters/` 或 `sessions/` 私有数据文件进入仓库。

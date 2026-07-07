@@ -6,7 +6,8 @@
     "scripts": {
         "start": "node server/index.js",
         "start:env": "node --env-file=.env.local server/index.js",
-        "test": "node --test tests/api-parse.test.js tests/server.test.js tests/schema.test.js tests/db.test.js tests/auth.test.js tests/bootstrap.test.js tests/personal-tasks.test.js"
+        "test": "node --test tests/api-parse.test.js tests/server.test.js tests/schema.test.js tests/db.test.js tests/auth.test.js tests/bootstrap.test.js tests/personal-tasks.test.js tests/pilot-check.test.js",
+        "pilot:check": "node server/pilot/check-config.js"
     },
     "engines": {
         "node": ">=20.6"

@@ -295,6 +295,18 @@ The browser calls the same-origin serverless endpoint and never receives the Dee
 - Vercel serves the pilot frontend and same-origin serverless API. GitHub Pages remains a static-only demonstration option without AI parsing.
 - Prefer a PWA as the first lightweight installable version; native packaging, branding, logo, splash animation, and app-store release are later phases.
 
+## 14.1 Local Pilot Checklist
+
+The 5-person local pilot is documented in `PILOT.md`. Before starting a phone test, run `npm run pilot:check` with `.env.local` loaded. The checker validates that:
+
+- `INITIAL_PASSWORD` exists without printing its value.
+- At least one pilot account source is configured.
+- Optional roster JSON exists, is valid, and contains no more than five users.
+- `DATABASE_PATH` is persistent and is expected to stay outside Git.
+- `HOST=0.0.0.0` is treated as an explicit LAN exposure warning.
+
+The checker must not print real passwords, API keys, cookies, or full roster contents.
+
 ---
 
 ## 15. Dynamic Date Processing

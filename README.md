@@ -111,6 +111,12 @@ npm test
 
 部署和内测步骤见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
+5 人以内本地手机内测步骤见 [PILOT.md](./PILOT.md)。正式内测前先运行：
+
+```powershell
+npm run pilot:check
+```
+
 ## 演示视频
 
 > GitHub 通常不会直接播放仓库中的 MP4 文件。请点击下方链接，在文件页面下载后观看。
