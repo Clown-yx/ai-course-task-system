@@ -1,5 +1,6 @@
 const STORAGE_KEY = "course-ai-tasks-v1";
 const API_URL = "./api/parse";
+const AUTH_API_URL = "./api/auth";
 const BOARD_LIST_IDS = ["done-list", "today-list", "upcoming-list"];
 
 const COURSE_TYPE_LABELS = {
@@ -29,14 +30,19 @@ let pendingConfirmation = null;
 let lastFocusedElement = null;
 let deleteAnimationState = null;
 let taskTransferState = null;
+let currentUser = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     bindStaticEvents();
     addTaskRow("homework");
     renderBoard();
+    await initializeAuth();
 });
 
 function bindStaticEvents() {
+    document.getElementById("login-button").addEventListener("click", login);
+    document.getElementById("change-password-button").addEventListener("click", changePassword);
+    document.getElementById("logout-button").addEventListener("click", logout);
     document.getElementById("add-homework").addEventListener("click", () => addTaskRow("homework"));
     document.getElementById("add-project").addEventListener("click", () => addTaskRow("project"));
     document.getElementById("preview-manual").addEventListener("click", createPreview);
@@ -82,6 +88,151 @@ function bindStaticEvents() {
         if (event.key === "Escape" && !document.getElementById("confirm-modal").hidden) {
             closeConfirmation();
         }
+    });
+}
+
+async function initializeAuth() {
+    if (window.location.protocol === "file:") {
+        showAuthStatus("请通过本地 Node 服务访问登录系统，不要直接打开 index.html。", "error");
+        showAuthMode("login");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${AUTH_API_URL}/me`, { credentials: "same-origin" });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            showAuthMode("login");
+            return;
+        }
+
+        currentUser = payload.user;
+        updateUserBar();
+        if (currentUser.mustChangePassword) {
+            showAuthMode("change");
+            showAuthStatus("首次登录必须修改初始密码。", "loading");
+            return;
+        }
+        unlockApplication();
+    } catch (error) {
+        console.error("认证状态检查失败：", error);
+        showAuthMode("login");
+        showAuthStatus("无法连接认证服务，请确认本地后端已启动。", "error");
+    }
+}
+
+async function login() {
+    const studentId = document.getElementById("login-student-id").value.trim();
+    const password = document.getElementById("login-password").value;
+    if (!studentId || !password) {
+        showAuthStatus("请输入学号和密码。", "error");
+        return;
+    }
+
+    showAuthStatus("正在登录……", "loading");
+    try {
+        const response = await fetch(`${AUTH_API_URL}/login`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId, password })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "登录失败。");
+
+        currentUser = payload.user;
+        updateUserBar();
+        if (payload.mustChangePassword) {
+            showAuthMode("change");
+            showAuthStatus("首次登录必须修改初始密码。", "loading");
+            document.getElementById("current-password").value = password;
+            document.getElementById("new-password").focus();
+            return;
+        }
+
+        unlockApplication();
+    } catch (error) {
+        showAuthStatus(error.message, "error");
+    }
+}
+
+async function changePassword() {
+    const currentPassword = document.getElementById("current-password").value;
+    const newPassword = document.getElementById("new-password").value;
+    const confirmedPassword = document.getElementById("confirm-new-password").value;
+    if (newPassword !== confirmedPassword) {
+        showAuthStatus("两次输入的新密码不一致。", "error");
+        return;
+    }
+
+    showAuthStatus("正在修改密码……", "loading");
+    try {
+        const response = await fetch(`${AUTH_API_URL}/change-password`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "修改密码失败。");
+
+        currentUser = { ...currentUser, mustChangePassword: false };
+        clearPasswordFields();
+        unlockApplication();
+    } catch (error) {
+        showAuthStatus(error.message, "error");
+    }
+}
+
+async function logout() {
+    try {
+        await fetch(`${AUTH_API_URL}/logout`, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: "{}"
+        });
+    } catch (error) {
+        console.error("退出登录失败：", error);
+    }
+
+    currentUser = null;
+    updateUserBar();
+    clearPasswordFields();
+    showAuthMode("login");
+    showAuthStatus("已退出登录。", "");
+}
+
+function unlockApplication() {
+    updateUserBar();
+    showAuthStatus("", "");
+    showPage("input-page");
+}
+
+function showAuthMode(mode) {
+    document.getElementById("login-panel").hidden = mode !== "login";
+    document.getElementById("change-password-panel").hidden = mode !== "change";
+    showPage("auth-page");
+}
+
+function showAuthStatus(message, type) {
+    const status = document.getElementById("auth-status");
+    status.className = `status-box ${type || ""}`.trim();
+    status.textContent = message;
+}
+
+function updateUserBar() {
+    const userBar = document.getElementById("user-bar");
+    userBar.hidden = !currentUser;
+    document.getElementById("current-user-label").textContent = currentUser
+        ? `${currentUser.displayName}（${currentUser.studentId}）`
+        : "未登录";
+}
+
+function clearPasswordFields() {
+    ["login-password", "current-password", "new-password", "confirm-new-password"].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = "";
     });
 }
 
@@ -903,6 +1054,15 @@ function resetForm() {
 }
 
 function showPage(pageId) {
+    if (pageId !== "auth-page" && !currentUser) {
+        showAuthMode("login");
+        return;
+    }
+    if (pageId !== "auth-page" && currentUser.mustChangePassword) {
+        showAuthMode("change");
+        showAuthStatus("首次登录必须修改初始密码。", "loading");
+        return;
+    }
     document.querySelectorAll(".page").forEach(page => page.classList.toggle("active", page.id === pageId));
     window.scrollTo({ top: 0, behavior: "auto" });
 }

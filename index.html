@@ -8,7 +8,61 @@
 </head>
 <body>
     <main class="app-shell">
-        <section id="input-page" class="page active" aria-labelledby="input-title">
+        <div id="user-bar" class="user-bar" hidden>
+            <span id="current-user-label">未登录</span>
+            <button id="logout-button" class="line-button small" type="button">退出登录</button>
+        </div>
+
+        <section id="auth-page" class="page active" aria-labelledby="auth-title">
+            <header class="page-header input-header">
+                <div>
+                    <p class="page-index">00 / AUTH</p>
+                    <h1 id="auth-title">登录系统</h1>
+                    <p>使用预置学号和初始密码登录。首次登录必须修改密码。</p>
+                </div>
+            </header>
+
+            <div class="auth-layout">
+                <section id="login-panel" class="panel auth-panel" aria-labelledby="login-title">
+                    <div class="section-heading">
+                        <h2 id="login-title">账号登录</h2>
+                        <span>STUDENT ID</span>
+                    </div>
+                    <label class="field">
+                        <span>学号</span>
+                        <input id="login-student-id" type="text" autocomplete="username" placeholder="请输入学号">
+                    </label>
+                    <label class="field">
+                        <span>密码</span>
+                        <input id="login-password" type="password" autocomplete="current-password" placeholder="请输入密码">
+                    </label>
+                    <button id="login-button" class="line-button strong full" type="button">登录 →</button>
+                </section>
+
+                <section id="change-password-panel" class="panel auth-panel" aria-labelledby="change-password-title" hidden>
+                    <div class="section-heading">
+                        <h2 id="change-password-title">首次登录改密</h2>
+                        <span>REQUIRED</span>
+                    </div>
+                    <label class="field">
+                        <span>当前密码</span>
+                        <input id="current-password" type="password" autocomplete="current-password" placeholder="请输入当前密码">
+                    </label>
+                    <label class="field">
+                        <span>新密码</span>
+                        <input id="new-password" type="password" autocomplete="new-password" placeholder="至少 8 个字符">
+                    </label>
+                    <label class="field">
+                        <span>确认新密码</span>
+                        <input id="confirm-new-password" type="password" autocomplete="new-password" placeholder="再次输入新密码">
+                    </label>
+                    <button id="change-password-button" class="line-button strong full" type="button">修改密码并进入 →</button>
+                </section>
+            </div>
+            <div id="auth-status" class="status-box" role="status" aria-live="polite"></div>
+        </section>
+
+        <section id="input-page" class="page" aria-labelledby="input-title">
             <header class="page-header input-header">
                 <div>
                     <p class="page-index">01 / INPUT</p>

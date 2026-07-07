@@ -10,7 +10,7 @@
 
 ## 解决方案
 
-输入完整课程通知后，系统通过 DeepSeek 将文本解析为结构化 JSON。用户确认结果后，每项作业或项目会进入 `Done / Today / Upcoming` 任务看板，并保存在浏览器本地。
+用户登录后输入完整课程通知，系统通过 DeepSeek 将文本解析为结构化 JSON。用户确认结果后，每项作业或项目会进入 `Done / Today / Upcoming` 任务看板。当前任务数据仍保存在浏览器本地，后续阶段会迁移到 SQLite。
 
 ## 产品原型
 
@@ -45,6 +45,7 @@ flowchart LR
 - AI 结果回填、人工检查与确认
 - `Done / Today / Upcoming` 自动分类
 - 本地持久化、软删除与回收站
+- 学号登录、首次登录强制改密、服务端 session
 - 桌面、平板和移动端响应式布局
 - 服务端环境变量管理 API Key
 
@@ -54,26 +55,44 @@ flowchart LR
 - DeepSeek API
 - Vercel Serverless Functions
 - Node.js 本地后端
-- SQLite 数据库结构
+- SQLite / better-sqlite3
 - localStorage
 
 ## 本地运行
 
-仅使用手动录入和本地任务看板时，可以直接打开 `index.html`。
-
-需要在本地使用 AI 解析时：
+本地完整功能需要通过 Node.js 服务访问，不再建议直接打开 `index.html`。
 
 1. 将 `.env.example` 复制为不会进入 Git 的 `.env.local`。
-2. 在 `.env.local` 中填写新的 `DEEPSEEK_API_KEY`。
-3. 执行：
+2. 在 `.env.local` 中填写新的 `DEEPSEEK_API_KEY`、`INITIAL_PASSWORD` 和至少一个内测账号配置。
+3. 安装依赖：
+
+```powershell
+npm install
+```
+
+4. 执行：
 
 ```powershell
 npm run start:env
 ```
 
-4. 访问 `http://127.0.0.1:8000`。
+5. 访问 `http://127.0.0.1:8000`。
 
-本地服务使用 Node.js 20.6 或更高版本，不需要安装第三方依赖。不要把真实 Key 写入 `.env.example`。
+本地服务使用 Node.js 20.6 或更高版本。不要把真实 Key、初始密码、学生名单或数据库文件写入 Git。
+
+内测账号有两种创建方式：
+
+- 单个 owner：设置 `PILOT_OWNER_STUDENT_ID`、`PILOT_OWNER_DISPLAY_NAME` 和 `INITIAL_PASSWORD`。
+- 多个内测用户：设置 `PILOT_ROSTER_PATH=rosters/pilot-users.json`，该文件必须放在被 Git 忽略的 `rosters/` 目录中。
+
+roster JSON 示例：
+
+```json
+[
+    { "studentId": "24000001", "displayName": "内测用户一" },
+    { "studentId": "24000002", "displayName": "内测用户二" }
+]
+```
 
 若后续需要让同一热点中的手机访问，必须显式将 `.env.local` 中的 `HOST` 改为 `0.0.0.0`，并使用开发电脑的热点 IPv4 地址访问。只允许 Windows 防火墙的专用网络访问，不要开放到公网。
 
@@ -83,7 +102,7 @@ npm run start:env
 npm test
 ```
 
-当前阶段已新增 SQLite 结构基线，schema 位于 `server/db/schema.sql`。实际 `.db` / `.sqlite` 数据库文件、学生名单、会话文件和本地试点数据均被 Git 忽略，不能提交到公开仓库。
+当前阶段已新增 SQLite 结构基线和登录认证。schema 位于 `server/db/schema.sql`。实际 `.db` / `.sqlite` 数据库文件、学生名单、会话文件和本地试点数据均被 Git 忽略，不能提交到公开仓库。
 
 ## 部署说明
 

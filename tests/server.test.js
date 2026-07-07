@@ -7,7 +7,7 @@ let server;
 let baseUrl;
 
 before(async () => {
-    server = createServer();
+    server = createServer({ skipBootstrap: true });
     await new Promise((resolve, reject) => {
         server.once("error", reject);
         server.listen(0, "127.0.0.1", resolve);

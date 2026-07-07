@@ -3,6 +3,9 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 const parseHandler = require("../api/parse.js");
+const { openDatabase } = require("./db/index.js");
+const { createAuthRouter } = require("./auth/routes.js");
+const { bootstrapPilotUsers } = require("./auth/bootstrap.js");
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8000;
@@ -15,8 +18,17 @@ const PUBLIC_FILES = new Map([
     ["/style.css", { file: "style.css", contentType: "text/css; charset=utf-8" }]
 ]);
 
-function createServer() {
-    return http.createServer(async (request, response) => {
+function createServer(options = {}) {
+    const db = options.db || openDatabase(options.databaseOptions);
+    const bootstrapResult = options.skipBootstrap
+        ? { created: 0, skipped: 0 }
+        : bootstrapPilotUsers(db, options.env || process.env);
+    const authRouter = createAuthRouter(db, {
+        sessionTtlMs: options.sessionTtlMs,
+        secureCookies: options.secureCookies
+    });
+
+    const server = http.createServer(async (request, response) => {
         setSecurityHeaders(response);
 
         let requestUrl;
@@ -32,8 +44,15 @@ function createServer() {
             return;
         }
 
+        if (requestUrl.pathname.startsWith("/api/auth/")) {
+            await handleAuthApiRequest(request, response, requestUrl.pathname, authRouter);
+            return;
+        }
+
         await handleStaticRequest(request, response, requestUrl.pathname);
     });
+    server.bootstrapResult = bootstrapResult;
+    return server;
 }
 
 async function handleStaticRequest(request, response, pathname) {
@@ -79,6 +98,30 @@ async function handleApiRequest(request, response) {
         { method: request.method, body },
         createApiResponse(response)
     );
+}
+
+async function handleAuthApiRequest(request, response, pathname, authRouter) {
+    let body = {};
+    if (request.method !== "GET" && request.method !== "HEAD") {
+        let rawBody;
+        try {
+            rawBody = await readRequestBody(request);
+        } catch (error) {
+            sendJson(response, error.statusCode || 400, { error: error.message });
+            return;
+        }
+
+        if (rawBody) {
+            try {
+                body = JSON.parse(rawBody);
+            } catch (error) {
+                sendJson(response, 400, { error: "请求 JSON 格式无效。" });
+                return;
+            }
+        }
+    }
+
+    await authRouter(request, createApiResponse(response), { pathname, body });
 }
 
 function readRequestBody(request) {
@@ -157,7 +200,7 @@ function parsePort(value) {
 function startServer(options = {}) {
     const host = options.host ?? process.env.HOST ?? DEFAULT_HOST;
     const port = options.port ?? parsePort(process.env.PORT);
-    const server = createServer();
+    const server = createServer(options);
 
     return new Promise((resolve, reject) => {
         const handleError = error => reject(error);
@@ -175,9 +218,13 @@ if (require.main === module) {
     }
 
     startServer()
-        .then(({ host, address }) => {
+        .then(({ server, host, address }) => {
             const port = typeof address === "object" ? address.port : DEFAULT_PORT;
             console.log(`本地服务已启动：http://${host}:${port}`);
+            const bootstrapResult = server.bootstrapResult || { created: 0, skipped: 0 };
+            if (bootstrapResult.created || bootstrapResult.skipped) {
+                console.log(`内测账号导入：新增 ${bootstrapResult.created} 个，跳过 ${bootstrapResult.skipped} 个。`);
+            }
             if (host === "0.0.0.0") {
                 console.log("手机访问时请将 0.0.0.0 替换为开发电脑的热点 IPv4 地址。");
             }

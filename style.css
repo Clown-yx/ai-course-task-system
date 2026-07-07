@@ -57,8 +57,35 @@ textarea:focus-visible {
     padding: 54px 60px 72px;
 }
 
+.user-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: var(--line) solid var(--black);
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .page {
     display: none;
+}
+
+.auth-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    align-items: start;
+}
+
+.auth-panel[hidden] {
+    display: none !important;
+}
+
+.auth-panel .field + .field {
+    margin-top: 18px;
 }
 
 .page.active {
@@ -901,6 +928,7 @@ body.stable-board-render .card-list .task-card {
 @media (max-width: 980px) {
     .app-shell { padding: 36px 24px 54px; }
     .input-layout { grid-template-columns: 1fr; }
+    .auth-layout { grid-template-columns: 1fr; }
     .ai-panel { position: static; }
     .confirm-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .trash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

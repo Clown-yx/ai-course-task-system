@@ -6,7 +6,13 @@ This repository is a browser-based course information organizer. `index.html` de
 
 ## Build, Test, and Development Commands
 
-No build step or package manager is currently required. Run the syntax and API tests with:
+Install dependencies before running the local service or tests:
+
+```powershell
+npm install
+```
+
+Run the syntax and API tests with:
 
 ```powershell
 node --check app.js
@@ -14,7 +20,7 @@ node --check api/parse.js
 npm test
 ```
 
-Run the complete local service with `npm run start:env` after creating an ignored `.env.local`. The default address is `http://127.0.0.1:8000`. Opening `index.html` directly supports manual entry and the local task board, but AI parsing requires the same-origin `/api/parse` backend. Use the browser console (F12) to inspect JavaScript and network errors during manual testing.
+Run the complete local service with `npm run start:env` after creating an ignored `.env.local`. The default address is `http://127.0.0.1:8000`. Opening `index.html` directly is no longer the normal development path because login, AI parsing, and later task APIs require the same-origin backend. Use the browser console (F12) to inspect JavaScript and network errors during manual testing.
 
 ## Coding Style & Naming Conventions
 

@@ -196,9 +196,18 @@ Authorization must be enforced by the backend. Hiding controls in the frontend i
 - Student ID is the login identifier; name is display data and is not a credential.
 - The shared pilot initial password is supplied through the server environment variable `INITIAL_PASSWORD`; its literal value must never be committed.
 - Set `must_change_password = true` for new accounts and block normal application use until the password is changed.
-- Store only adaptive password hashes with unique salts. Prefer Argon2id; never store plaintext or reversible passwords.
+- Store only adaptive password hashes with unique salts. The local pilot currently uses Node.js `scrypt` hashes in `server/auth/password.js`; Argon2id remains the preferred future upgrade before larger public deployment. Never store plaintext or reversible passwords.
 - The platform owner may reset a password to a new temporary value and revoke sessions, but cannot read a user's current password.
 - Student IDs and names are private operational data and must not be included in the public repository.
+
+The stage-3 authentication baseline is implemented:
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `POST /api/auth/change-password`
+
+Sessions are stored as hashes in SQLite and sent to the browser as `HttpOnly` same-site cookies. New pilot users can be bootstrapped from `PILOT_OWNER_STUDENT_ID` / `PILOT_OWNER_DISPLAY_NAME` or from an ignored JSON roster configured by `PILOT_ROSTER_PATH`. Every bootstrapped user starts with `must_change_password = true`.
 
 ---
 
@@ -211,7 +220,7 @@ The local HTTP baseline is implemented in `server/index.js`. The local pilot arc
 - Environment variables for secrets and machine-specific configuration.
 - A personal hotspot or private router for the development computer and a few test phones.
 
-The current local server provides the static frontend and `/api/parse` without third-party runtime dependencies. It binds to `127.0.0.1` by default. Binding to `0.0.0.0` must be an explicit local configuration used only on a controlled private network. SQLite, authentication, and task APIs are added in later roadmap stages.
+The current local server provides the static frontend, `/api/parse`, SQLite initialization, and `/api/auth/*`. It binds to `127.0.0.1` by default. Binding to `0.0.0.0` must be an explicit local configuration used only on a controlled private network. Task APIs are added in later roadmap stages.
 
 Initial request path:
 

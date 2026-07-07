@@ -682,3 +682,54 @@
 - `node --check app.js`、`node --check api/parse.js` 和 `node --check server/index.js` 通过。
 - `npm test` 共 18 项测试全部通过，其中新增 schema 测试 5 项。
 - `git diff --check` 通过；仅出现 Windows 换行符提示，不影响代码内容。
+
+---
+
+## 2026年7月8日：阶段 3 登录认证与强制改密
+
+### 修改文件
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `server/index.js`
+- `server/db/index.js`
+- `server/auth/password.js`
+- `server/auth/session.js`
+- `server/auth/routes.js`
+- `server/auth/bootstrap.js`
+- `index.html`
+- `app.js`
+- `style.css`
+- `tests/auth.test.js`
+- `tests/bootstrap.test.js`
+- `tests/db.test.js`
+- `tests/server.test.js`
+- `README.md`
+- `project_spec.md`
+- `AGENTS.md`
+- `ROADMAP.md`
+
+### 修改内容
+
+- 引入 `better-sqlite3`，本地后端启动时可打开 SQLite 数据库并应用 `server/db/schema.sql`。
+- 新增数据库初始化模块，默认数据库路径为 `data/app.sqlite`，该路径已被 Git 忽略。
+- 新增密码哈希模块，使用带唯一盐的 Node.js `scrypt` 哈希格式，不保存明文或可逆密码。
+- 新增 session 模块，浏览器只保存 `HttpOnly`、`SameSite=Lax` 的 session cookie，数据库只保存 `session_hash`。
+- 新增认证接口：登录、退出、获取当前用户、修改密码。
+- 新增内测账号导入逻辑，支持从环境变量创建平台 owner，或从被忽略的 roster JSON 导入少量内测用户。
+- 新用户默认 `must_change_password = true`，首次登录后必须修改初始密码才能进入主应用。
+- 前端新增登录页、首次登录改密页和当前用户栏；未登录时不能进入原输入页、确认页、看板或回收站。
+- 更新自动测试，覆盖数据库初始化、账号导入、密码哈希、登录失败、登录成功、强制改密、旧密码失效、新密码登录和退出登录。
+- 更新 README、项目规范、Agent 说明和路线图。
+
+### 修改原因
+
+- 5 人以内小范围内测需要先区分用户身份，不能继续依赖无账号的浏览器本地状态。
+- 后续个人任务 API、班级任务和权限控制都必须建立在服务端认证之上。
+- 公开仓库不能包含真实学生名单、初始密码、会话或数据库文件，因此需要环境变量和被忽略 roster 文件机制。
+
+### 验证结果
+
+- `node --check app.js`、`node --check server/index.js`、`node --check server/auth/bootstrap.js`、`node --check server/auth/routes.js`、`node --check server/auth/session.js` 和 `node --check server/auth/password.js` 通过。
+- `npm test` 共 24 项测试全部通过。
