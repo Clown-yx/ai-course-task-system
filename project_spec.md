@@ -229,6 +229,19 @@ Recommended database entities:
 - `user_task_states`: each member's independent completion state for a class task.
 - `sessions`: login sessions and revocation state.
 
+The initial SQLite schema is defined in `server/db/schema.sql` and is treated as the stage-2 database contract. It currently covers:
+
+- `schema_migrations` for explicit database version tracking.
+- `users` with `student_id`, `display_name`, `password_hash`, `must_change_password`, global role, and active state. No plaintext password field is allowed.
+- `classes` and `class_members`, with a partial unique index that permits only one active class membership per user during the first pilot.
+- `personal_tasks` for private tasks, including `deleted_at` soft delete support.
+- `class_tasks` for administrator-published shared tasks, including `withdrawn_at` for later withdrawal workflows.
+- `user_task_states` for each member's independent class-task completion and soft-delete state.
+- `sessions` for hashed login sessions, expiry, and revocation.
+- `audit_events` for security- and data-sensitive operations.
+
+Local database files, rosters, session dumps, and private pilot data must remain ignored by Git.
+
 ---
 
 ## 12. Personal Recycle Bin

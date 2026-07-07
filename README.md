@@ -53,6 +53,8 @@ flowchart LR
 - HTML5 / CSS3 / Vanilla JavaScript
 - DeepSeek API
 - Vercel Serverless Functions
+- Node.js 本地后端
+- SQLite 数据库结构
 - localStorage
 
 ## 本地运行
@@ -80,6 +82,8 @@ npm run start:env
 ```powershell
 npm test
 ```
+
+当前阶段已新增 SQLite 结构基线，schema 位于 `server/db/schema.sql`。实际 `.db` / `.sqlite` 数据库文件、学生名单、会话文件和本地试点数据均被 Git 忽略，不能提交到公开仓库。
 
 ## 部署说明
 

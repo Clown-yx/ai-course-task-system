@@ -4,6 +4,12 @@
 .vercel
 node_modules
 *.log
+*.db
+*.sqlite
+*.sqlite3
+data/
+sessions/
+rosters/
 .DS_Store
 Thumbs.db
 docs/resume-bullets.md

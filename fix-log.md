@@ -643,3 +643,42 @@
 - `npm test` 共 13 项测试全部通过，其中服务端测试 5 项。
 - 使用随机本地端口启动正式服务后，请求 `/` 返回 `HTTP 200` 和 `text/html; charset=utf-8`。
 - 未配置真实 DeepSeek Key；API 路由测试确认此时安全返回 `503`。
+
+---
+
+## 2026年7月8日：阶段 2 SQLite 数据库结构基线
+
+### 修改文件
+
+- `server/db/schema.sql`
+- `tests/schema.test.js`
+- `.gitignore`
+- `package.json`
+- `project_spec.md`
+- `README.md`
+- `ROADMAP.md`
+
+### 修改内容
+
+- 新增 SQLite schema，建立本地小范围内测所需的数据结构基线。
+- 设计 `users`、`classes`、`class_members`、`personal_tasks`、`class_tasks`、`user_task_states`、`sessions`、`audit_events` 和 `schema_migrations` 表。
+- 用户表只保留 `password_hash`，并包含 `must_change_password`，不设计任何明文密码字段。
+- 班级成员使用独立表，并通过局部唯一索引限制首轮内测中每个用户只能有一个活跃班级。
+- 个人任务和用户班级任务状态均支持 `deleted_at` 软删除，为回收站和恢复流程保留数据基础。
+- 班级任务设计为一条共享任务记录，成员完成状态通过 `user_task_states` 独立保存。
+- 会话表只保存 `session_hash`、过期时间和撤销时间，为后续登录系统留出安全结构。
+- 补充 schema 自动测试，检查关键表、密码哈希字段、单活跃班级约束、软删除字段和 Git 忽略规则。
+- `.gitignore` 新增数据库文件、学生名单、本地数据目录和会话目录忽略规则。
+- 更新测试命令、项目说明和路线图，将阶段 2 标记为完成。
+
+### 修改原因
+
+- 登录、权限、多人同步和 localStorage 迁移都依赖稳定的数据结构。
+- 仓库是公开仓库，必须先明确数据库文件、学生名单和会话数据不能进入 Git。
+- 先落地 schema 合同，可以在不引入第三方 SQLite 驱动的前提下验证表结构和安全边界。
+
+### 验证结果
+
+- `node --check app.js`、`node --check api/parse.js` 和 `node --check server/index.js` 通过。
+- `npm test` 共 18 项测试全部通过，其中新增 schema 测试 5 项。
+- `git diff --check` 通过；仅出现 Windows 换行符提示，不影响代码内容。
